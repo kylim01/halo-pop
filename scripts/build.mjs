@@ -1,5 +1,6 @@
-// Wraps src/game.html in a full HTML document for the app and the website.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+// Builds www/ for the app and the website: wraps src/game.html in a full HTML document
+// and copies the privacy policy.
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 const body = readFileSync('src/game.html', 'utf8');
 const html = `<!doctype html>
 <html lang="en">
@@ -16,4 +17,5 @@ ${body}
 `;
 mkdirSync('www', { recursive: true });
 writeFileSync('www/index.html', html);
-console.log('Built www/index.html');
+copyFileSync('src/privacy.html', 'www/privacy.html');
+console.log('Built www/index.html and www/privacy.html');

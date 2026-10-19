@@ -1,32 +1,45 @@
 # Halo Pop
 
-A one-tap puzzle game. Coloured orbs ride a spinning halo. Tap to launch the centre orb into the slot under the arrow. Line up 3 or more of one colour to pop them; pop 4+ and the halo reverses direction. New orbs keep appearing, so the game ends when the halo is full.
+A one-tap puzzle game. Coloured orbs ride a spinning halo. Tap to launch the centre orb into the slot under the arrow. Line up 3 or more of one colour to pop them; pop 4+ and the halo reverses direction. The game ends when the halo is full.
 
-## Run it
-Open `www/index.html` in a browser, or run `npm run build` after editing `src/game.html`.
+Play it: https://kylim01.github.io/halo-pop/ · Privacy policy: https://kylim01.github.io/halo-pop/privacy.html
 
-Every push to `main` publishes the web version to GitHub Pages (Settings -> Pages -> Source: GitHub Actions).
+## What's in here
+| Path | What it is |
+|---|---|
+| `src/game.html` | The whole game (edit this) |
+| `src/privacy.html` | Privacy policy page |
+| `assets/` | App icon and splash source images |
+| `scripts/build.mjs` | Builds `www/` for the app and website |
+| `scripts/patch-native.mjs` | Adds AdMob IDs, tracking text and version number to the native projects |
+| `.github/workflows/pages.yml` | Publishes the web version to GitHub Pages on every push |
+| `.github/workflows/android.yml` | Builds a test APK and a Play Store bundle (.aab) on every push |
+| `docs/store-listing.md` | Store text, keywords, screenshot plan, privacy answers |
+| `app-ads.txt` | Template for your AdMob app-ads.txt |
 
-## Make the phone apps
+## Ads
+`src/game.html` uses `@capacitor-community/admob`:
+- Rewarded video on "Watch ad · clear half the halo" (one continue per game)
+- Interstitial at most once every 3 games, only between games
+- Consent form for EEA/UK users and the iOS tracking prompt
+
+It ships with Google's **test** ad IDs. Before release, put your real ad unit IDs in `AD_IDS` in `src/game.html`, and your AdMob app IDs in the repo secrets `ADMOB_APP_ID_ANDROID` (and `ADMOB_APP_ID_IOS` for iOS builds).
+
+## Android build (no Android Studio needed)
+Every push to `main` runs **Build Android app** in the Actions tab. Download:
+- `halo-pop-test-apk` → install on an Android phone to test
+- `halo-pop-play-store-bundle` → upload to Google Play Console
+
+The bundle is signed when these repo secrets exist: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+## iOS build (needs a Mac with Xcode)
 ```bash
 npm install
 npm run build
-npx cap add android      # once
-npx cap add ios          # once, on a Mac
-npm run android          # opens Android Studio
-npm run ios              # opens Xcode
+npx cap add ios
+npx capacitor-assets generate --ios
+npx cap sync ios
+node scripts/patch-native.mjs
+npx cap open ios
 ```
-Change `appId` in `capacitor.config.json` to your own reverse-domain ID before the first `cap add`.
-
-## Monetisation plan
-- Rewarded video (AdMob, `@capacitor-community/admob`) on "Watch ad - clear half the halo". One continue per game.
-- Interstitial at most once every 3 games, never mid-game.
-- "Remove ads" in-app purchase via RevenueCat.
-- Use AdMob test IDs during development.
-
-## Store checklist
-- [ ] Icon 1024x1024, 4-6 screenshots, short gameplay video
-- [ ] Privacy policy URL (can be a page on GitHub Pages)
-- [ ] app-ads.txt on your site
-- [ ] Google Play: closed test with 12+ testers for 14 days, then production
-- [ ] App Store: TestFlight build, privacy labels, ATT prompt, submit for review
+In Xcode: select your Team under Signing & Capabilities, then Product → Archive → Distribute App → App Store Connect.

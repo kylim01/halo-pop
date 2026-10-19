@@ -4,3 +4,6 @@ ios/App/Pods/
 .DS_Store
 *.keystore
 *.jks
+android/
+ios/
+upload.jks

@@ -1,0 +1,4 @@
+# Replace pub-XXXXXXXXXXXXXXXX with your AdMob publisher ID (AdMob > Settings > Account information).
+# This file must be served at the ROOT of the developer website you list in the stores,
+# e.g. https://kylim01.github.io/app-ads.txt (needs a repo named kylim01.github.io).
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

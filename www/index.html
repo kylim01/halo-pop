@@ -278,21 +278,69 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Space'){ e.preventDefault(); fire(); }
   if (e.key === 's' || e.key === 'S') swap();
 });
-$('again').addEventListener('click', newGame);
-$('cont').addEventListener('click', () => {
-  $('over').hidden = true; $('ad').hidden = false;
-  let n = 3; $('adCount').textContent = n;
-  const iv = setInterval(() => {
-    n--; $('adCount').textContent = n;
-    if (n <= 0){
-      clearInterval(iv); $('ad').hidden = true;
-      const g = geo();
-      for (let i=0;i<SLOTS;i+=2){ const a=slotAngle(i); burst(g.cx+Math.cos(a)*g.R, g.cy+Math.sin(a)*g.R, COLORS[S.slots[i]], 6); S.slots[i] = -1; }
-      S.continued = true; S.over = false; S.spawnT = 3; S.warn = null;
-      pop('Second wind!', g.cx, g.cy - g.R*0.45, '#22c39a', 30);
-      hud();
-    }
-  }, 1000);
+/* ---------- ads ----------
+   In the phone app this uses the AdMob plugin. In a browser it shows the demo placeholder.
+   Replace the TEST ids below with your real AdMob ad unit ids before release. */
+const AD_IDS = {
+  android: { rewarded: 'ca-app-pub-3940256099942544/5224354917', interstitial: 'ca-app-pub-3940256099942544/1033173712' },
+  ios:     { rewarded: 'ca-app-pub-3940256099942544/1712485313', interstitial: 'ca-app-pub-3940256099942544/4411468910' }
+};
+const INTERSTITIAL_EVERY = 3; // games between interstitials
+const Ads = (() => {
+  const cap = window.Capacitor;
+  const AdMob = cap?.Plugins?.AdMob;
+  const native = !!(AdMob && cap.isNativePlatform?.());
+  const ids = AD_IDS[cap?.getPlatform?.()] || AD_IDS.android;
+  let ready = false, gamesSinceAd = 0;
+  const noAds = () => { try { return localStorage.getItem('halopop-noads') === '1'; } catch(e){ return false; } };
+  async function init(){
+    if (!native) return;
+    try {
+      if (cap.getPlatform() === 'ios'){
+        const t = await AdMob.trackingAuthorizationStatus();
+        if (t.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+      }
+      await AdMob.initialize({});
+      const consent = await AdMob.requestConsentInfo();
+      if (consent.isConsentFormAvailable && consent.status === 'REQUIRED') await AdMob.showConsentForm();
+      ready = true;
+    } catch(e){ console.warn('AdMob init failed', e); }
+  }
+  function demo(){
+    return new Promise(res => {
+      $('ad').hidden = false; let n = 3; $('adCount').textContent = n;
+      const iv = setInterval(() => { n--; $('adCount').textContent = n; if (n<=0){ clearInterval(iv); $('ad').hidden = true; res(true); } }, 1000);
+    });
+  }
+  async function rewarded(){
+    if (!native || !ready) return demo();
+    try {
+      await AdMob.prepareRewardVideoAd({ adId: ids.rewarded });
+      const reward = await AdMob.showRewardVideoAd();
+      return !!reward;
+    } catch(e){ console.warn('Rewarded ad failed', e); return false; }
+  }
+  async function maybeInterstitial(){
+    gamesSinceAd++;
+    if (!native || !ready || noAds() || gamesSinceAd < INTERSTITIAL_EVERY) return;
+    gamesSinceAd = 0;
+    try { await AdMob.prepareInterstitial({ adId: ids.interstitial }); await AdMob.showInterstitial(); }
+    catch(e){ console.warn('Interstitial failed', e); }
+  }
+  return { init, rewarded, maybeInterstitial };
+})();
+Ads.init();
+
+$('again').addEventListener('click', async () => { await Ads.maybeInterstitial(); newGame(); });
+$('cont').addEventListener('click', async () => {
+  $('over').hidden = true;
+  const earned = await Ads.rewarded();
+  if (!earned){ $('over').hidden = false; return; }
+  const g = geo();
+  for (let i=0;i<SLOTS;i+=2){ const a=slotAngle(i); burst(g.cx+Math.cos(a)*g.R, g.cy+Math.sin(a)*g.R, COLORS[S.slots[i]], 6); S.slots[i] = -1; }
+  S.continued = true; S.over = false; S.spawnT = 3; S.warn = null;
+  pop('Second wind!', g.cx, g.cy - g.R*0.45, '#22c39a', 30);
+  hud();
 });
 
 function start(data){

@@ -1,5 +1,7 @@
 {
-  "appId": "com.yourname.halopop",
+  "appId": "io.github.kylim01.halopop",
   "appName": "Halo Pop",
-  "webDir": "www"
+  "webDir": "www",
+  "android": { "backgroundColor": "#cfeaff" },
+  "ios": { "backgroundColor": "#cfeaff" }
 }
