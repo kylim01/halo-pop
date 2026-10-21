@@ -32,7 +32,12 @@ Every push to `main` runs **Build Android app** in the Actions tab. Download:
 
 The bundle is signed when these repo secrets exist: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
 
-## iOS build (needs a Mac with Xcode)
+## iOS build in the cloud (no Mac needed)
+Run **Actions → Build iOS app and upload to TestFlight → Run workflow**. It builds on GitHub's Mac servers, signs with your App Store Connect API key and uploads to TestFlight.
+
+Repo secrets needed: `APPLE_TEAM_ID`, `APPSTORE_KEY_ID`, `APPSTORE_ISSUER_ID`, `APPSTORE_KEY_P8` (the full text of the .p8 file, including the BEGIN/END lines). Optional: `ADMOB_APP_ID_IOS`.
+
+## iOS build on a Mac (alternative)
 ```bash
 npm install
 npm run build
