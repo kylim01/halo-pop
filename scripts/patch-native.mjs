@@ -25,7 +25,9 @@ const plist = 'ios/App/App/Info.plist';
 if (existsSync(plist)) {
   let p = readFileSync(plist, 'utf8');
   if (!p.includes('GADApplicationIdentifier')) {
-    const extra = `	<key>GADApplicationIdentifier</key>
+    const extra = `	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>GADApplicationIdentifier</key>
 	<string>${iosId}</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This lets Halo Pop show ads that are more relevant to you. The game works the same either way.</string>
