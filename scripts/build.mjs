@@ -22,6 +22,16 @@ ${body}
 </html>
 `;
 mkdirSync('www', { recursive: true });
-writeFileSync('www/index.html', html);
+// Bundle the native plugin bridge when dependencies are installed (CI / your machine).
+let finalHtml = html;
+try {
+  const esbuild = await import('esbuild');
+  await esbuild.build({ entryPoints: ['src/native.js'], bundle: true, format: 'iife', minify: true, outfile: 'www/native.js' });
+  finalHtml = html.replace('<body>', '<body>\n<script src="native.js"></script>');
+  console.log('Bundled www/native.js (AdMob plugin)');
+} catch (e) {
+  console.log('Skipped native.js bundle (run npm install first):', e.code || e.message);
+}
+writeFileSync('www/index.html', finalHtml);
 copyFileSync('src/privacy.html', 'www/privacy.html');
 console.log('Built www/index.html and www/privacy.html');

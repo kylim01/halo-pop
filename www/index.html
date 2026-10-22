@@ -42,9 +42,9 @@ canvas{display:block;width:100%;touch-action:none;cursor:pointer}
 #swapDot{width:18px;height:18px;border-radius:50%;display:inline-block}
 .hint{margin:0;color:var(--muted);font-size:14px;line-height:1.5;text-align:center;text-wrap:balance}
 .hint b{color:var(--ink)}
-.overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(21,35,63,.55);backdrop-filter:blur(3px);z-index:20;
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:rgba(21,35,63,.55);backdrop-filter:blur(3px);z-index:20;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
-.card{width:min(360px,100%);background:var(--card);border-radius:24px;padding:26px 22px;display:flex;flex-direction:column;gap:14px;text-align:center}
+.card{box-sizing:border-box;width:100%;max-width:360px;background:var(--card);border-radius:24px;padding:26px 22px;display:flex;flex-direction:column;gap:14px;text-align:center}
 .card h2{margin:0;font-family:var(--display);font-weight:400;font-size:32px}
 .card p{margin:0;color:var(--muted);line-height:1.5}
 .big{font-family:var(--display);font-size:56px;line-height:1}
@@ -75,6 +75,13 @@ canvas{display:block;width:100%;touch-action:none;cursor:pointer}
     <p id="finalBest">Best 0</p>
     <button class="btn primary" id="cont">Watch ad · clear half the halo</button>
     <button class="btn" id="again">Play again</button>
+  </div>
+</div>
+<div class="overlay" id="diag" hidden>
+  <div class="card">
+    <h2>Ad status</h2>
+    <pre id="diagText" style="text-align:left;white-space:pre-wrap;font-size:12px;margin:0;max-height:50vh;overflow:auto"></pre>
+    <button class="btn" id="diagClose">Close</button>
   </div>
 </div>
 <div class="overlay" id="ad" hidden>
@@ -294,24 +301,38 @@ const LIVE_IDS = {
 const AD_IDS = ADS_LIVE ? LIVE_IDS : TEST_IDS;
 const INTERSTITIAL_EVERY = 3; // games between interstitials
 const Ads = (() => {
-  const cap = window.Capacitor;
-  const AdMob = cap?.Plugins?.AdMob;
-  const native = !!(AdMob && cap.isNativePlatform?.());
-  const ids = AD_IDS[cap?.getPlatform?.()] || AD_IDS.android;
-  let ready = false, gamesSinceAd = 0;
+  const cap = window.HaloCapacitor || window.Capacitor;
+  const log = [];
+  const note = m => { log.push(new Date().toLocaleTimeString()+' '+m); if (log.length>20) log.shift(); };
+  const platform = cap?.getPlatform?.() || 'web';
+  const native = !!(cap && (cap.isNativePlatform?.() || platform !== 'web'));
+  let AdMob = null;
+  try { AdMob = window.HaloAdMob || cap?.Plugins?.AdMob || (cap?.registerPlugin ? cap.registerPlugin('AdMob') : null); } catch(e){ note('plugin lookup error: '+e); }
+  const ids = AD_IDS[platform] || AD_IDS.android;
+  let ready = false, initing = null, gamesSinceAd = 0;
+  note(`platform=${platform} native=${native} plugin=${!!AdMob} live=${ADS_LIVE}`);
   const noAds = () => { try { return localStorage.getItem('halopop-noads') === '1'; } catch(e){ return false; } };
-  async function init(){
-    if (!native) return;
-    try {
-      if (cap.getPlatform() === 'ios'){
-        const t = await AdMob.trackingAuthorizationStatus();
-        if (t.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+  const err = e => (e && (e.message || e.code || JSON.stringify(e))) || String(e);
+  function init(){
+    if (!native || !AdMob) return Promise.resolve();
+    if (initing) return initing;
+    initing = (async () => {
+      if (platform === 'ios'){
+        try {
+          const t = await AdMob.trackingAuthorizationStatus();
+          note('tracking: '+t.status);
+          if (t.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+        } catch(e){ note('tracking error: '+err(e)); }
       }
-      await AdMob.initialize({});
-      const consent = await AdMob.requestConsentInfo();
-      if (consent.isConsentFormAvailable && consent.status === 'REQUIRED') await AdMob.showConsentForm();
-      ready = true;
-    } catch(e){ console.warn('AdMob init failed', e); }
+      try { await AdMob.initialize({}); ready = true; note('initialize ok'); }
+      catch(e){ note('initialize error: '+err(e)); initing = null; return; }
+      try {
+        const c = await AdMob.requestConsentInfo();
+        note('consent: '+c.status);
+        if (c.isConsentFormAvailable && c.status === 'REQUIRED') await AdMob.showConsentForm();
+      } catch(e){ note('consent error (ads still run): '+err(e)); }
+    })();
+    return initing;
   }
   function demo(){
     return new Promise(res => {
@@ -320,21 +341,37 @@ const Ads = (() => {
     });
   }
   async function rewarded(){
-    if (!native || !ready) return demo();
+    if (!native) return demo();          // browser preview only
+    if (!AdMob){ note('rewarded: no plugin, continue granted'); return true; }
+    await init();
     try {
       await AdMob.prepareRewardVideoAd({ adId: ids.rewarded });
       const reward = await AdMob.showRewardVideoAd();
-      return !!reward;
-    } catch(e){ console.warn('Rewarded ad failed', e); return false; }
+      note('rewarded shown: '+JSON.stringify(reward));
+      return true;
+    } catch(e){
+      // No ad available (common for new ad units): let the player continue anyway.
+      note('rewarded error: '+err(e)); return true;
+    }
   }
   async function maybeInterstitial(){
     gamesSinceAd++;
-    if (!native || !ready || noAds() || gamesSinceAd < INTERSTITIAL_EVERY) return;
+    if (!native || !AdMob || noAds() || gamesSinceAd < INTERSTITIAL_EVERY) return;
     gamesSinceAd = 0;
-    try { await AdMob.prepareInterstitial({ adId: ids.interstitial }); await AdMob.showInterstitial(); }
-    catch(e){ console.warn('Interstitial failed', e); }
+    await init();
+    try { await AdMob.prepareInterstitial({ adId: ids.interstitial }); await AdMob.showInterstitial(); note('interstitial shown'); }
+    catch(e){ note('interstitial error: '+err(e)); }
   }
-  return { init, rewarded, maybeInterstitial };
+  return { init, rewarded, maybeInterstitial, status: () => log.join('\n') };
+})();
+// Hidden ad status: tap the Halo Pop logo 5 times quickly.
+(() => {
+  let taps = 0, t = 0;
+  document.querySelector('.logo').addEventListener('click', () => {
+    const now = Date.now(); taps = now - t < 600 ? taps + 1 : 1; t = now;
+    if (taps >= 5){ taps = 0; $('diagText').textContent = Ads.status() || '(no events yet)'; $('diag').hidden = false; }
+  });
+  $('diagClose').addEventListener('click', () => $('diag').hidden = true);
 })();
 Ads.init();
 
