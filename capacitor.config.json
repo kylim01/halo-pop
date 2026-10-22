@@ -2,6 +2,11 @@
   "appId": "io.github.kylim01.halopop",
   "appName": "Halo Pop",
   "webDir": "www",
-  "android": { "backgroundColor": "#cfeaff" },
-  "ios": { "backgroundColor": "#cfeaff" }
+  "android": {
+    "backgroundColor": "#cfeaff"
+  },
+  "ios": {
+    "backgroundColor": "#cfeaff",
+    "scrollEnabled": false
+  }
 }
