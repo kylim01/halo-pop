@@ -14,7 +14,8 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:mani
 body{position:fixed;inset:0;width:100%}
 body{background:var(--sky);background-image:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 75%);color:var(--ink);font-family:var(--body);
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.app{max-width:480px;margin:0 auto;padding-block:14px 22px;
+.app{max-width:480px;margin:0 auto;box-sizing:border-box;min-height:100%;justify-content:center;
+  padding-top:calc(14px + env(safe-area-inset-top, 0px));padding-bottom:calc(22px + env(safe-area-inset-bottom, 0px));
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
   display:flex;flex-direction:column;gap:10px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -110,9 +111,12 @@ function newGame(){
 function resize(){
   // Fit the board to the screen so the page never needs to scroll.
   const app = cv.parentElement;
-  const others = app.offsetHeight - cv.offsetHeight;
-  const availH = window.innerHeight - others - 4;
   const cs = getComputedStyle(app);
+  const kids = [...app.children].filter(c => c !== cv && !c.hidden);
+  const others = kids.reduce((h,c) => h + c.offsetHeight, 0)
+    + (app.children.length - 1) * (parseFloat(cs.rowGap) || 0)
+    + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const availH = window.innerHeight - others - 4;
   const contentW = app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   W = Math.floor(Math.min(contentW, availH/1.05));
   W = Math.max(240, W); H = Math.round(W*1.05);
