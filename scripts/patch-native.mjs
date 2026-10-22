@@ -21,6 +21,16 @@ if (existsSync(manifest)) {
   console.log(`Android: AdMob ${androidId}, versionCode ${versionCode}, versionName ${pkg.version}`);
 }
 
+// Minimum iOS version 15.0 (App Store requirement from April 2027).
+const podfile = 'ios/App/Podfile';
+if (existsSync(podfile)) {
+  writeFileSync(podfile, readFileSync(podfile, 'utf8').replace(/platform :ios, '[\d.]+'/, "platform :ios, '15.0'"));
+}
+const pbx = 'ios/App/App.xcodeproj/project.pbxproj';
+if (existsSync(pbx)) {
+  writeFileSync(pbx, readFileSync(pbx, 'utf8').replace(/IPHONEOS_DEPLOYMENT_TARGET = [\d.]+;/g, 'IPHONEOS_DEPLOYMENT_TARGET = 15.0;'));
+}
+
 const plist = 'ios/App/App/Info.plist';
 if (existsSync(plist)) {
   let p = readFileSync(plist, 'utf8');
