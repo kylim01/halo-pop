@@ -271,11 +271,18 @@ window.addEventListener('keydown', e => {
 });
 /* ---------- ads ----------
    In the phone app this uses the AdMob plugin. In a browser it shows the demo placeholder.
-   Replace the TEST ids below with your real AdMob ad unit ids before release. */
-const AD_IDS = {
+   ADS_LIVE stays false for test builds (Google test ads). The build sets it to true
+   only when you build with ADS_LIVE=1 (the "live ads" option in the GitHub workflows). */
+const ADS_LIVE = false;
+const TEST_IDS = {
   android: { rewarded: 'ca-app-pub-3940256099942544/5224354917', interstitial: 'ca-app-pub-3940256099942544/1033173712' },
   ios:     { rewarded: 'ca-app-pub-3940256099942544/1712485313', interstitial: 'ca-app-pub-3940256099942544/4411468910' }
 };
+const LIVE_IDS = {
+  android: TEST_IDS.android, // replace when the Android AdMob app is set up
+  ios:     { rewarded: 'ca-app-pub-6254242910134674/5321411689', interstitial: 'ca-app-pub-6254242910134674/2674407906' }
+};
+const AD_IDS = ADS_LIVE ? LIVE_IDS : TEST_IDS;
 const INTERSTITIAL_EVERY = 3; // games between interstitials
 const Ads = (() => {
   const cap = window.Capacitor;

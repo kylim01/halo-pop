@@ -1,14 +1,20 @@
 name: Build iOS app and upload to TestFlight
 # Runs on GitHub's Mac servers, so no Mac is needed.
 # Needs repo secrets: APPLE_TEAM_ID, APPSTORE_KEY_ID, APPSTORE_ISSUER_ID, APPSTORE_KEY_P8
-# Optional: ADMOB_APP_ID_IOS (defaults to Google's test app ID)
+# Optional: ADMOB_APP_ID_IOS (defaults to Halo Pop's AdMob iOS app ID)
 on:
   workflow_dispatch:
+    inputs:
+      live_ads:
+        description: 'Use real AdMob ads (only for the App Store release build)'
+        type: boolean
+        default: false
 jobs:
   ios:
     runs-on: macos-15
     env:
       ADMOB_APP_ID_IOS: ${{ secrets.ADMOB_APP_ID_IOS }}
+      ADS_LIVE: ${{ inputs.live_ads && '1' || '0' }}
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
       ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}

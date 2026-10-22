@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const androidId = process.env.ADMOB_APP_ID_ANDROID || 'ca-app-pub-3940256099942544~3347511713';
-const iosId = process.env.ADMOB_APP_ID_IOS || 'ca-app-pub-3940256099942544~1458002511';
+const iosId = process.env.ADMOB_APP_ID_IOS || 'ca-app-pub-6254242910134674~4199901703';
 const versionCode = process.env.VERSION_CODE || '1';
 
 const manifest = 'android/app/src/main/AndroidManifest.xml';

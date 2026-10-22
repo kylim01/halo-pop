@@ -1,7 +1,13 @@
 // Builds www/ for the app and the website: wraps src/game.html in a full HTML document
 // and copies the privacy policy.
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
-const body = readFileSync('src/game.html', 'utf8');
+let body = readFileSync('src/game.html', 'utf8');
+if (process.env.ADS_LIVE === '1') {
+  body = body.replace('const ADS_LIVE = false;', 'const ADS_LIVE = true;');
+  console.log('LIVE ads enabled');
+} else {
+  console.log('Test ads (set ADS_LIVE=1 for real ads)');
+}
 const html = `<!doctype html>
 <html lang="en">
 <head>
